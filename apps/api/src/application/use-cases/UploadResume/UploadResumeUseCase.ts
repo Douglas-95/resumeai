@@ -6,6 +6,9 @@ import { IAnalysisRepository } from '../../domain/repositories/IAnalysisReposito
 import { IStoragePort } from '../ports/IStoragePort.js'
 import { IQueuePort } from '../ports/IQueuePort.js'
 import { FileType } from '@resumeai/shared-types'
+import { PDFParser } from '../../infrastructure/parsers/PDFParser.js'
+import { DOCXParser } from '../../infrastructure/parsers/DOCXParser.js'
+import { logger } from '../../infrastructure/logger/logger.js'
 
 export interface UploadResumeInput {
   userId: string
@@ -35,11 +38,10 @@ export class UploadResumeUseCase {
 
   /**
    * Upload ALWAYS succeeds independently of AI availability.
-   * The file is stored, resume and analysis records created,
-   * and the analysis job is enqueued for async processing.
+   * Text extraction runs locally without LLM dependencies.
    */
   async execute(input: UploadResumeInput): Promise<UploadResumeOutput> {
-    // 1. Upload file to storage — this must never fail silently
+    // 1. Upload file to storage
     const storagePath = `${input.userId}/${Date.now()}-${input.fileName}`
     const fileUrl = await this.storage.upload({
       bucket: this.bucket,
@@ -48,17 +50,30 @@ export class UploadResumeUseCase {
       mimeType: input.mimeType,
     })
 
-    // 2. Create Resume entity
+    // 2. Extract plain text locally (no LLM dependency, fast)
+    let extractedText = ''
+    try {
+      if (input.fileType === 'PDF') {
+        extractedText = await PDFParser.extractText(input.fileBuffer)
+      } else if (input.fileType === 'DOCX') {
+        extractedText = await DOCXParser.extractText(input.fileBuffer)
+      }
+    } catch (err) {
+      logger.warn({ err }, 'Aviso: Falha na extração direta de texto. O worker tentará ler durante o processamento.')
+    }
+
+    // 3. Create Resume entity
     const resume = Resume.create({
       userId: input.userId,
       fileName: input.fileName,
       fileUrl,
       fileType: input.fileType,
+      extractedText,
       status: 'PENDING',
     })
     await this.resumeRepository.save(resume)
 
-    // 3. Create Analysis entity (empty, will be populated by the worker)
+    // 4. Create Analysis entity
     const analysis = Analysis.create({
       resumeId: resume.id,
       userId: input.userId,
@@ -66,20 +81,19 @@ export class UploadResumeUseCase {
     })
     await this.analysisRepository.save(analysis)
 
-    // 4. Enqueue async analysis job — decoupled from upload response
+    // 5. Enqueue async analysis job
     const jobId = await this.queue.enqueueAnalysisJob({
       resumeId: resume.id,
       analysisId: analysis.id,
       userId: input.userId,
     })
 
-    // 5. Return immediately — client polls or subscribes for results
     return {
       resumeId: resume.id,
       analysisId: analysis.id,
       jobId,
       status: 'PENDING',
-      message: 'Currículo recebido com sucesso. A análise foi iniciada.',
+      message: 'Currículo recebido com sucesso. Extração concluída e análise iniciada.',
     }
   }
 }

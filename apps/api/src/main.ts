@@ -1,9 +1,13 @@
 import 'reflect-metadata'
+import { setupContainer } from './infrastructure/container/container.js'
 import { buildServer } from './presentation/http/server.js'
 import { env } from './infrastructure/config/env.js'
 import { logger } from './infrastructure/logger/logger.js'
 
 async function bootstrap() {
+  // Initialize DI Container
+  setupContainer()
+
   const server = await buildServer()
 
   try {
