@@ -1,14 +1,14 @@
 import { injectable, inject } from 'tsyringe'
-import { Resume } from '../../domain/entities/Resume.js'
-import { Analysis } from '../../domain/entities/Analysis.js'
-import { IResumeRepository } from '../../domain/repositories/IResumeRepository.js'
-import { IAnalysisRepository } from '../../domain/repositories/IAnalysisRepository.js'
-import { IStoragePort } from '../ports/IStoragePort.js'
-import { IQueuePort } from '../ports/IQueuePort.js'
+import { Resume } from '../../../domain/entities/Resume.js'
+import { Analysis } from '../../../domain/entities/Analysis.js'
+import { IResumeRepository } from '../../../domain/repositories/IResumeRepository.js'
+import { IAnalysisRepository } from '../../../domain/repositories/IAnalysisRepository.js'
+import { IStoragePort } from '../../ports/IStoragePort.js'
+import { IQueuePort } from '../../ports/IQueuePort.js'
 import { FileType } from '@resumeai/shared-types'
-import { PDFParser } from '../../infrastructure/parsers/PDFParser.js'
-import { DOCXParser } from '../../infrastructure/parsers/DOCXParser.js'
-import { logger } from '../../infrastructure/logger/logger.js'
+import { PDFParser } from '../../../infrastructure/parsers/PDFParser.js'
+import { DOCXParser } from '../../../infrastructure/parsers/DOCXParser.js'
+import { logger } from '../../../infrastructure/logger/logger.js'
 
 export interface UploadResumeInput {
   userId: string

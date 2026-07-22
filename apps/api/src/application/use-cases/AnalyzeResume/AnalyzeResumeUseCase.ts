@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe'
-import { IResumeRepository } from '../../domain/repositories/IResumeRepository.js'
-import { IAnalysisRepository } from '../../domain/repositories/IAnalysisRepository.js'
-import { IAIPort } from '../ports/IAIPort.js'
-import { logger } from '../../infrastructure/logger/logger.js'
+import { IResumeRepository } from '../../../domain/repositories/IResumeRepository.js'
+import { IAnalysisRepository } from '../../../domain/repositories/IAnalysisRepository.js'
+import { IAIPort } from '../../ports/IAIPort.js'
+import { logger } from '../../../infrastructure/logger/logger.js'
 
 export interface AnalyzeResumeInput {
   resumeId: string

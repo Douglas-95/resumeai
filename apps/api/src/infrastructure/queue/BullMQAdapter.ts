@@ -40,7 +40,7 @@ export class BullMQAdapter implements IQueuePort {
         
         // Lazy resolve to avoid circular dependencies
         import('tsyringe').then(({ container }) => {
-          import('../../application/use-cases/AnalyzeResume/AnalyzeResumeUseCase.js').then(({ AnalyzeResumeUseCase }) => {
+          import('../../../application/use-cases/AnalyzeResume/AnalyzeResumeUseCase.js').then(({ AnalyzeResumeUseCase }) => {
             const useCase = container.resolve(AnalyzeResumeUseCase)
             useCase.execute(payload).catch((e) => {
               logger.error({ err: e }, 'Erro na execução da análise local de fallback')

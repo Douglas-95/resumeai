@@ -1,8 +1,8 @@
 import { Worker, Job } from 'bullmq'
 import { container } from 'tsyringe'
-import { AnalyzeResumeUseCase } from '../../application/use-cases/AnalyzeResume/AnalyzeResumeUseCase.js'
-import { logger } from '../logger/logger.js'
-import { env } from '../config/env.js'
+import { AnalyzeResumeUseCase } from '../../../application/use-cases/AnalyzeResume/AnalyzeResumeUseCase.js'
+import { logger } from '../../logger/logger.js'
+import { env } from '../../config/env.js'
 
 export const ANALYSIS_QUEUE_NAME = 'resume-analysis'
 
