@@ -21,6 +21,17 @@ export function CircularScore({
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
 
+  const scoreColor =
+    score >= 85
+      ? 'hsl(142, 76%, 36%)'
+      : score >= 70
+        ? 'hsl(174, 63%, 40%)'
+        : score >= 55
+          ? 'hsl(43, 96%, 56%)'
+          : score >= 40
+            ? 'hsl(25, 95%, 53%)'
+            : 'hsl(0, 84%, 60%)'
+
   return (
     <div className="flex flex-col items-center justify-center space-y-2">
       <div className="relative" style={{ width: size, height: size }}>
@@ -40,8 +51,7 @@ export function CircularScore({
             cy={size / 2}
             r={radius}
             className="fill-none"
-            stroke="currentColor"
-            style={{ color: `var(--score-color)` }}
+            stroke={scoreColor}
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
@@ -68,21 +78,6 @@ export function CircularScore({
       </div>
 
       {label && <span className="text-sm font-medium text-muted-foreground">{label}</span>}
-
-      {/* Map custom inline variables to hook HSL themes */}
-      <style jsx>{`
-        div {
-          --score-color: ${score >= 85
-            ? 'hsl(142, 76%, 36%)'
-            : score >= 70
-              ? 'hsl(174, 63%, 40%)'
-              : score >= 55
-                ? 'hsl(43, 96%, 56%)'
-                : score >= 40
-                  ? 'hsl(25, 95%, 53%)'
-                  : 'hsl(0, 84%, 60%)'};
-        }
-      `}</style>
     </div>
   )
 }
