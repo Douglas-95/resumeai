@@ -3,9 +3,15 @@
 import { Moon, Sun, Bell, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
 export function Header() {
+  const [mounted, setMounted] = useState(false)
   const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-border/50 bg-background/80 px-6 backdrop-blur-sm">
@@ -25,10 +31,14 @@ export function Header() {
           aria-label="Alternar tema"
           id="theme-toggle-btn"
         >
-          {theme === 'dark' ? (
-            <Sun className="h-4 w-4" />
+          {mounted ? (
+            theme === 'dark' ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )
           ) : (
-            <Moon className="h-4 w-4" />
+            <div className="h-4 w-4" /> // Placeholder empty block to avoid hydration mismatch
           )}
         </motion.button>
 
