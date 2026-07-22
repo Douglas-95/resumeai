@@ -35,9 +35,19 @@ export class BullMQAdapter implements IQueuePort {
       return job.id ?? payload.analysisId
     } catch (err) {
       logger.error({ err, payload }, 'Erro ao enfileirar job no BullMQ')
-      // Fallback behavior if Redis is unavailable in dev environment
       if (env.NODE_ENV === 'development') {
-        logger.warn('Redis/BullMQ indisponível em dev. Job id mock retornado.')
+        logger.warn('Redis/BullMQ indisponível. Executando análise em background local síncrona de fallback...')
+        
+        // Lazy resolve to avoid circular dependencies
+        import('tsyringe').then(({ container }) => {
+          import('../../application/use-cases/AnalyzeResume/AnalyzeResumeUseCase.js').then(({ AnalyzeResumeUseCase }) => {
+            const useCase = container.resolve(AnalyzeResumeUseCase)
+            useCase.execute(payload).catch((e) => {
+              logger.error({ err: e }, 'Erro na execução da análise local de fallback')
+            })
+          })
+        })
+
         return `mock-job-${payload.analysisId}`
       }
       throw err
