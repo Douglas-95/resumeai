@@ -11,6 +11,8 @@ export class BullMQAdapter implements IQueuePort {
     this.queue = new Queue(ANALYSIS_QUEUE_NAME, {
       connection: {
         url: env.REDIS_URL,
+        maxRetriesPerRequest: 0, // Fail fast when Redis is offline instead of blocking the promise
+        enableOfflineQueue: false, // Do not buffer commands when offline
       },
       defaultJobOptions: {
         attempts: env.AI_JOB_RETRY_ATTEMPTS,
