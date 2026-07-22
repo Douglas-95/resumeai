@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Resume {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  fileName      String    @map("file_name")
+  fileUrl       String    @map("file_url")
+  fileType      FileType  @map("file_type")
+  extractedText String?   @map("extracted_text") @db.Text
+  parsedData    Json?     @map("parsed_data")
+  status        ResumeStatus @default(PENDING)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  analysis      Analysis?
+
+  @@index([userId])
+  @@map("resumes")
+}
+
+model Analysis {
+  id           String       @id @default(uuid())
+  resumeId     String       @unique @map("resume_id")
+  userId       String       @map("user_id")
+  status       ResumeStatus @default(PENDING)
+
+  // Scores — nullable: each section can be null if AI failed
+  scores              Json?
+  insights            Json?
+  atsAnalysis         Json?  @map("ats_analysis")
+  starRewrites        Json?  @map("star_rewrites")
+  xyzRewrites         Json?  @map("xyz_rewrites")
+  improvements        Json?
+
+  // Per-section error records for graceful degradation
+  errors       Json?
+
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  resume       Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobMatches   JobMatch[]
+
+  @@index([userId])
+  @@map("analyses")
+}
+
+model JobMatch {
+  id                 String   @id @default(uuid())
+  analysisId         String   @map("analysis_id")
+  jobDescription     String   @map("job_description") @db.Text
+  matchScore         Int      @map("match_score")
+  missingKeywords    Json     @map("missing_keywords")
+  missingCompetencies Json    @map("missing_competencies")
+  suggestions        Json
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  analysis    Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@map("job_matches")
+}
+
+enum ResumeStatus {
+  PENDING
+  PROCESSING
+  DONE
+  PARTIAL_ERROR
+  ERROR
+}
+
+enum FileType {
+  PDF
+  DOCX
+}
