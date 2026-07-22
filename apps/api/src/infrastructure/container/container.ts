@@ -6,6 +6,7 @@ import { PrismaResumeRepository } from '../database/repositories/PrismaResumeRep
 import { PrismaAnalysisRepository } from '../database/repositories/PrismaAnalysisRepository.js'
 import { InMemoryResumeRepository } from '../database/repositories/InMemoryResumeRepository.js'
 import { InMemoryAnalysisRepository } from '../database/repositories/InMemoryAnalysisRepository.js'
+import { InMemoryQueueAdapter } from '../queue/InMemoryQueueAdapter.js'
 
 // Adapters
 import { SupabaseStorageAdapter } from '../storage/SupabaseStorageAdapter.js'
@@ -18,19 +19,20 @@ export function setupContainer(): void {
   const useInMemory = env.DATABASE_URL.startsWith('file:') || process.env.USE_IN_MEMORY_DB === 'true'
 
   if (useInMemory) {
-    console.warn('⚠️ Utilizando banco de dados Em Memória (In-Memory) para testes locais.')
+    console.warn('⚠️ Utilizando banco de dados Em Memória (In-Memory) e Fila Local para testes locais.')
     container.registerInstance('IResumeRepository', new InMemoryResumeRepository())
     container.registerInstance('IAnalysisRepository', new InMemoryAnalysisRepository())
+    container.registerSingleton('IQueuePort', InMemoryQueueAdapter)
   } else {
     const prisma = new PrismaClient()
     container.registerInstance(PrismaClient, prisma)
     container.registerInstance('IResumeRepository', new PrismaResumeRepository(prisma))
     container.registerInstance('IAnalysisRepository', new PrismaAnalysisRepository(prisma))
+    container.registerSingleton('IQueuePort', BullMQAdapter)
   }
 
-  // Storage & Queue
+  // Storage
   container.registerSingleton('IStoragePort', SupabaseStorageAdapter)
-  container.registerSingleton('IQueuePort', BullMQAdapter)
   container.registerInstance('StorageBucket', env.SUPABASE_STORAGE_BUCKET)
 
   // AI Provider Injection based strictly on env.AI_PROVIDER
