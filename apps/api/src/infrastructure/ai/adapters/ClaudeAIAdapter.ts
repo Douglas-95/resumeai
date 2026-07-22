@@ -13,6 +13,15 @@ import {
   XYZRewrite,
 } from '@resumeai/shared-types'
 
+// Prompt imports
+import { EXTRACTION_SYSTEM_PROMPT, EXTRACTION_USER_PROMPT } from '../prompts/extraction.prompt.js'
+import { SCORING_SYSTEM_PROMPT, SCORING_USER_PROMPT } from '../prompts/scoring.prompt.js'
+import { INSIGHTS_SYSTEM_PROMPT, INSIGHTS_USER_PROMPT } from '../prompts/insights.prompt.js'
+import { ATS_SYSTEM_PROMPT, ATS_USER_PROMPT } from '../prompts/ats.prompt.js'
+import { STAR_SYSTEM_PROMPT, STAR_USER_PROMPT } from '../prompts/star.prompt.js'
+import { XYZ_SYSTEM_PROMPT, XYZ_USER_PROMPT } from '../prompts/xyz.prompt.js'
+import { IMPROVEMENTS_SYSTEM_PROMPT, IMPROVEMENTS_USER_PROMPT } from '../prompts/improvements.prompt.js'
+
 export class ClaudeAIAdapter implements IAIPort {
   private client?: Anthropic
 
@@ -48,19 +57,8 @@ export class ClaudeAIAdapter implements IAIPort {
   }
 
   async extractResumeData(text: string): Promise<ResumeParsedData> {
-    const prompt = `Extraia todas as informações relevantes do currículo abaixo em um objeto JSON válido.
-    Campos necessários:
-    name, currentRole, email, phone, location, linkedin, github, portfolio, summary,
-    experiences: [{ company, role, startDate, endDate, isCurrent, description }],
-    education: [{ institution, degree, field, startDate, endDate }],
-    certifications: [{ name, issuer, date }],
-    hardSkills: [], softSkills: [], languages: [{ language, level }]
-
-    Currículo:
-    ${text}`
-
     try {
-      const response = await this.callClaude(prompt)
+      const response = await this.callClaude(EXTRACTION_USER_PROMPT(text), EXTRACTION_SYSTEM_PROMPT)
       return this.parseJSON<ResumeParsedData>(response)
     } catch (err) {
       logger.error({ err }, 'Erro no ClaudeAIAdapter.extractResumeData')
@@ -69,65 +67,35 @@ export class ClaudeAIAdapter implements IAIPort {
   }
 
   async generateScores(resumeText: string, parsedData: ResumeParsedData): Promise<AnalysisScores> {
-    const prompt = `Avalie o currículo abaixo de 0 a 100 em 10 dimensões com justificativa detalhada para cada uma:
-    overall, ats, recruiter, impact, clarity, formatting, keyword, professionalism, leadership, technical.
-    Formato JSON:
-    { "overall": { "value": 85, "justification": "..." }, ... }
-
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callClaude(prompt)
+    const response = await this.callClaude(SCORING_USER_PROMPT(resumeText, parsedData), SCORING_SYSTEM_PROMPT)
     return this.parseJSON<AnalysisScores>(response)
   }
 
   async generateInsights(resumeText: string, parsedData: ResumeParsedData): Promise<Insight[]> {
-    const prompt = `Identifique pontos fortes, pontos fracos, informações ausentes, redundantes, falta de métricas, verbos de ação fracos, etc.
-    Retorne uma lista JSON de objetos com: type, problem, explanation, impact, howToFix, improvementExample.
-
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callClaude(prompt)
-    return this.parseJSON<Insight[]>(response)
+    const response = await this.callClaude(INSIGHTS_USER_PROMPT(resumeText, parsedData), INSIGHTS_SYSTEM_PROMPT)
+    const data = this.parseJSON<{ insights: Insight[] } | Insight[]>(response)
+    return Array.isArray(data) ? data : data.insights
   }
 
   async analyzeATS(resumeText: string): Promise<ATSAnalysis> {
-    const prompt = `Analise a compatibilidade ATS deste texto de currículo.
-    Retorne JSON: { score, isReadable, keywordCount, sectionOrder, hasTables, hasImages, hasColumns, isPDFCompatible, issues: [], recommendations: [] }
-
-    Texto: ${resumeText}`
-
-    const response = await this.callClaude(prompt)
+    const response = await this.callClaude(ATS_USER_PROMPT(resumeText), ATS_SYSTEM_PROMPT)
     return this.parseJSON<ATSAnalysis>(response)
   }
 
   async generateSTARRewrites(resumeText: string, parsedData: ResumeParsedData): Promise<STARRewrite[]> {
-    const prompt = `Reescreva as experiências profissionais no formato STAR (Situação, Tarefa, Ação, Resultado).
-    Retorne JSON array: [{ original, situation, task, action, result }]
-
-    Experiências: ${JSON.stringify(parsedData.experiences)}`
-
-    const response = await this.callClaude(prompt)
-    return this.parseJSON<STARRewrite[]>(response)
+    const response = await this.callClaude(STAR_USER_PROMPT(parsedData), STAR_SYSTEM_PROMPT)
+    const data = this.parseJSON<{ rewrites: STARRewrite[] } | STARRewrite[]>(response)
+    return Array.isArray(data) ? data : data.rewrites
   }
 
   async generateXYZRewrites(resumeText: string, parsedData: ResumeParsedData): Promise<XYZRewrite[]> {
-    const prompt = `Reescreva as frases de impacto no formato Google XYZ ("Conquistei X medido por Y fazendo Z").
-    Se não houver métricas reais, sugira métricas plausíveis informando na propriedade note.
-    Retorne JSON array: [{ original, rewritten, hasRealMetrics, note }]
-
-    Experiências: ${JSON.stringify(parsedData.experiences)}`
-
-    const response = await this.callClaude(prompt)
-    return this.parseJSON<XYZRewrite[]>(response)
+    const response = await this.callClaude(XYZ_USER_PROMPT(parsedData), XYZ_SYSTEM_PROMPT)
+    const data = this.parseJSON<{ rewrites: XYZRewrite[] } | XYZRewrite[]>(response)
+    return Array.isArray(data) ? data : data.rewrites
   }
 
   async generateImprovements(resumeText: string, parsedData: ResumeParsedData): Promise<Improvements> {
-    const prompt = `Gere sugestões de melhorias: professionalTitle, professionalSummary, linkedinHeadline, gupySummary, indeedSummary, cathoSummary, internationalSummary, atsFriendlyVersion, modernVersion, executiveVersion, internationalVersion.
-    Retorne JSON com estas propriedades.
-
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callClaude(prompt)
+    const response = await this.callClaude(IMPROVEMENTS_USER_PROMPT(parsedData), IMPROVEMENTS_SYSTEM_PROMPT)
     return this.parseJSON<Improvements>(response)
   }
 

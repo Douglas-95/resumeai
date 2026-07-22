@@ -13,6 +13,15 @@ import {
   XYZRewrite,
 } from '@resumeai/shared-types'
 
+// Prompt imports
+import { EXTRACTION_SYSTEM_PROMPT, EXTRACTION_USER_PROMPT } from '../prompts/extraction.prompt.js'
+import { SCORING_SYSTEM_PROMPT, SCORING_USER_PROMPT } from '../prompts/scoring.prompt.js'
+import { INSIGHTS_SYSTEM_PROMPT, INSIGHTS_USER_PROMPT } from '../prompts/insights.prompt.js'
+import { ATS_SYSTEM_PROMPT, ATS_USER_PROMPT } from '../prompts/ats.prompt.js'
+import { STAR_SYSTEM_PROMPT, STAR_USER_PROMPT } from '../prompts/star.prompt.js'
+import { XYZ_SYSTEM_PROMPT, XYZ_USER_PROMPT } from '../prompts/xyz.prompt.js'
+import { IMPROVEMENTS_SYSTEM_PROMPT, IMPROVEMENTS_USER_PROMPT } from '../prompts/improvements.prompt.js'
+
 export class OpenAIAdapter implements IAIPort {
   private client?: OpenAI
 
@@ -50,76 +59,40 @@ export class OpenAIAdapter implements IAIPort {
   }
 
   async extractResumeData(text: string): Promise<ResumeParsedData> {
-    const prompt = `Extraia as informações do currículo em JSON:
-    name, currentRole, email, phone, location, linkedin, github, portfolio, summary,
-    experiences: [{ company, role, startDate, endDate, isCurrent, description }],
-    education: [{ institution, degree, field, startDate, endDate }],
-    certifications: [{ name, issuer, date }],
-    hardSkills: [], softSkills: [], languages: [{ language, level }]
-
-    Currículo:
-    ${text}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(EXTRACTION_USER_PROMPT(text), EXTRACTION_SYSTEM_PROMPT)
     return this.parseJSON<ResumeParsedData>(response)
   }
 
   async generateScores(resumeText: string, parsedData: ResumeParsedData): Promise<AnalysisScores> {
-    const prompt = `Avalie o currículo (0-100) em 10 dimensões com justificativa:
-    overall, ats, recruiter, impact, clarity, formatting, keyword, professionalism, leadership, technical.
-    Formato JSON: { "overall": { "value": 85, "justification": "..." }, ... }
-
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(SCORING_USER_PROMPT(resumeText, parsedData), SCORING_SYSTEM_PROMPT)
     return this.parseJSON<AnalysisScores>(response)
   }
 
   async generateInsights(resumeText: string, parsedData: ResumeParsedData): Promise<Insight[]> {
-    const prompt = `Gere insights do currículo em um objeto JSON contendo "insights": [{ type, problem, explanation, impact, howToFix, improvementExample }].
-    
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(INSIGHTS_USER_PROMPT(resumeText, parsedData), INSIGHTS_SYSTEM_PROMPT)
     const data = this.parseJSON<{ insights: Insight[] } | Insight[]>(response)
     return Array.isArray(data) ? data : data.insights
   }
 
   async analyzeATS(resumeText: string): Promise<ATSAnalysis> {
-    const prompt = `Análise ATS em JSON: { score, isReadable, keywordCount, sectionOrder, hasTables, hasImages, hasColumns, isPDFCompatible, issues: [], recommendations: [] }
-    
-    Texto: ${resumeText}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(ATS_USER_PROMPT(resumeText), ATS_SYSTEM_PROMPT)
     return this.parseJSON<ATSAnalysis>(response)
   }
 
   async generateSTARRewrites(resumeText: string, parsedData: ResumeParsedData): Promise<STARRewrite[]> {
-    const prompt = `Reescreva as experiências em STAR. Retorne JSON { "rewrites": [{ original, situation, task, action, result }] }
-    
-    Experiências: ${JSON.stringify(parsedData.experiences)}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(STAR_USER_PROMPT(parsedData), STAR_SYSTEM_PROMPT)
     const data = this.parseJSON<{ rewrites: STARRewrite[] } | STARRewrite[]>(response)
     return Array.isArray(data) ? data : data.rewrites
   }
 
   async generateXYZRewrites(resumeText: string, parsedData: ResumeParsedData): Promise<XYZRewrite[]> {
-    const prompt = `Reescreva em formato Google XYZ. Retorne JSON { "rewrites": [{ original, rewritten, hasRealMetrics, note }] }
-    
-    Experiências: ${JSON.stringify(parsedData.experiences)}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(XYZ_USER_PROMPT(parsedData), XYZ_SYSTEM_PROMPT)
     const data = this.parseJSON<{ rewrites: XYZRewrite[] } | XYZRewrite[]>(response)
     return Array.isArray(data) ? data : data.rewrites
   }
 
   async generateImprovements(resumeText: string, parsedData: ResumeParsedData): Promise<Improvements> {
-    const prompt = `Melhorias em JSON: professionalTitle, professionalSummary, linkedinHeadline, gupySummary, indeedSummary, cathoSummary, internationalSummary, atsFriendlyVersion, modernVersion, executiveVersion, internationalVersion.
-    
-    Dados: ${JSON.stringify(parsedData)}`
-
-    const response = await this.callOpenAI(prompt)
+    const response = await this.callOpenAI(IMPROVEMENTS_USER_PROMPT(parsedData), IMPROVEMENTS_SYSTEM_PROMPT)
     return this.parseJSON<Improvements>(response)
   }
 
