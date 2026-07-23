@@ -7,6 +7,8 @@ import { PrismaAnalysisRepository } from '../database/repositories/PrismaAnalysi
 import { InMemoryResumeRepository } from '../database/repositories/InMemoryResumeRepository.js'
 import { InMemoryAnalysisRepository } from '../database/repositories/InMemoryAnalysisRepository.js'
 import { InMemoryQueueAdapter } from '../queue/InMemoryQueueAdapter.js'
+import { InMemoryJobMatchRepository } from '../database/repositories/InMemoryJobMatchRepository.js'
+import { PrismaJobMatchRepository } from '../database/repositories/PrismaJobMatchRepository.js'
 
 // Adapters
 import { SupabaseStorageAdapter } from '../storage/SupabaseStorageAdapter.js'
@@ -23,12 +25,14 @@ export function setupContainer(): void {
     console.warn('⚠️ Utilizando banco de dados Em Memória (In-Memory) e Fila Local para testes locais.')
     container.registerInstance('IResumeRepository', new InMemoryResumeRepository())
     container.registerInstance('IAnalysisRepository', new InMemoryAnalysisRepository())
+    container.registerInstance('IJobMatchRepository', new InMemoryJobMatchRepository())
     container.registerSingleton('IQueuePort', InMemoryQueueAdapter)
   } else {
     const prisma = new PrismaClient()
     container.registerInstance(PrismaClient, prisma)
     container.registerInstance('IResumeRepository', new PrismaResumeRepository(prisma))
     container.registerInstance('IAnalysisRepository', new PrismaAnalysisRepository(prisma))
+    container.registerInstance('IJobMatchRepository', new PrismaJobMatchRepository(prisma))
     container.registerSingleton('IQueuePort', BullMQAdapter)
   }
 

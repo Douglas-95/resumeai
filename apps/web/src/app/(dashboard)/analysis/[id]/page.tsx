@@ -9,6 +9,7 @@ import { ATSReport } from '@/components/features/analysis/ATSReport'
 import { STARRewrite } from '@/components/features/analysis/STARRewrite'
 import { XYZRewrite } from '@/components/features/analysis/XYZRewrite'
 import { ImprovementsView } from '@/components/features/analysis/ImprovementsView'
+import { JobMatcher } from '@/components/features/analysis/JobMatcher'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -21,10 +22,11 @@ import {
   CopyCheck,
   CheckCircle,
   Lightbulb,
+  Target, // Import target icon
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type TabType = 'overview' | 'insights' | 'ats' | 'rewrites' | 'improvements'
+type TabType = 'overview' | 'insights' | 'ats' | 'rewrites' | 'improvements' | 'jobmatch'
 
 export default function AnalysisPage() {
   const params = useParams()
@@ -90,6 +92,7 @@ export default function AnalysisPage() {
     { id: 'ats', label: 'ATS Analysis', icon: Activity },
     { id: 'rewrites', label: 'STAR / XYZ', icon: CopyCheck },
     { id: 'improvements', label: 'Melhorias', icon: FileText },
+    { id: 'jobmatch', label: 'Match de Vagas', icon: Target },
   ]
 
   return (
@@ -239,6 +242,13 @@ export default function AnalysisPage() {
                     <p className="text-muted-foreground text-sm font-medium">As sugestões de plataformas e currículos alternativos estão indisponíveis temporariamente.</p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* 6. JOB MATCH PANEL */}
+            {activeTab === 'jobmatch' && (
+              <div>
+                <JobMatcher analysisId={analysisId} />
               </div>
             )}
           </motion.div>

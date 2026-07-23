@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify'
 import { container } from 'tsyringe'
 import { UploadResumeUseCase } from '../../../application/use-cases/UploadResume/UploadResumeUseCase.js'
 import { FileType } from '@resumeai/shared-types'
+import { IResumeRepository } from '../../../domain/repositories/IResumeRepository.js'
+import { IAnalysisRepository } from '../../../domain/repositories/IAnalysisRepository.js'
 
 export async function resumeRoutes(app: FastifyInstance) {
   /**
@@ -86,7 +88,71 @@ export async function resumeRoutes(app: FastifyInstance) {
    * List resumes for the authenticated user.
    */
   app.get('/', async (request, reply) => {
-    // TODO: wire repository query
-    return reply.send({ success: true, data: [] })
+    const userId = 'temp-user-id' // Replace with request.user.id
+    
+    const resumeRepository = container.resolve<IResumeRepository>('IResumeRepository')
+    const analysisRepository = container.resolve<IAnalysisRepository>('IAnalysisRepository')
+
+    const resumes = await resumeRepository.findByUserId(userId)
+    const data = await Promise.all(
+      resumes.map(async (resume) => {
+        const analysis = await analysisRepository.findByResumeId(resume.id)
+        return {
+          id: resume.id,
+          fileName: resume.fileName,
+          fileType: resume.fileType,
+          status: resume.status,
+          createdAt: resume.createdAt,
+          analysisId: analysis?.id ?? null,
+        }
+      })
+    )
+
+    return reply.send({ success: true, data })
   })
+
+  /**
+   * DELETE /api/v1/resumes/:id
+   * Delete a resume and its associated analysis (cascading).
+   */
+  app.delete(
+    '/:id',
+    {
+      schema: {
+        description: 'Delete a resume and its analysis history',
+        tags: ['resumes'],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+          required: ['id'],
+        },
+      },
+    },
+    async (request, reply) => {
+      const userId = 'temp-user-id' // Replace with request.user.id
+      const { id } = request.params as { id: string }
+
+      const resumeRepository = container.resolve<IResumeRepository>('IResumeRepository')
+
+      const resume = await resumeRepository.findById(id)
+      if (!resume) {
+        return reply.status(404).send({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Currículo não encontrado.' },
+        })
+      }
+
+      if (resume.userId !== userId) {
+        return reply.status(403).send({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Acesso negado: este currículo pertence a outro usuário.' },
+        })
+      }
+
+      await resumeRepository.delete(id)
+      return reply.send({ success: true, message: 'Currículo e análise excluídos com sucesso.' })
+    }
+  )
 }

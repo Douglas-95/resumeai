@@ -1,8 +1,9 @@
 'use client'
 
 import { Improvements } from '@resumeai/shared-types'
-import { Sparkles, Copy, Check, Info } from 'lucide-react'
+import { Sparkles, Copy, Check, Info, Eye } from 'lucide-react'
 import { useState } from 'react'
+import { VersionExporterModal } from './VersionExporterModal'
 
 interface ImprovementsViewProps {
   improvements: Improvements
@@ -10,6 +11,11 @@ interface ImprovementsViewProps {
 
 export function ImprovementsView({ improvements }: ImprovementsViewProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<{
+    title: string
+    content: string
+    description: string
+  } | null>(null)
 
   const copyToClipboard = (text: string | null, key: string) => {
     if (!text) return
@@ -89,14 +95,23 @@ export function ImprovementsView({ improvements }: ImprovementsViewProps) {
                     <h4 className="font-bold text-sm text-foreground">{ver.title}</h4>
                     <p className="text-2xs text-muted-foreground mt-0.5">{ver.desc}</p>
                   </div>
-                  <button
-                    onClick={() => copyToClipboard(ver.content, ver.key)}
-                    id={`copy-btn-${ver.key}`}
-                    className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    title="Copiar texto"
-                  >
-                    {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedVersion({ title: ver.title, content: ver.content || '', description: ver.desc })}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background px-3 py-1.5 text-xs font-semibold hover:border-border hover:bg-muted text-foreground transition-all"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Visualizar & Exportar PDF</span>
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(ver.content, ver.key)}
+                      id={`copy-btn-${ver.key}`}
+                      className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                      title="Copiar texto"
+                    >
+                      {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="bg-card/50 border border-border/30 rounded-xl p-4 font-mono text-2xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
                   {ver.content}
@@ -106,6 +121,17 @@ export function ImprovementsView({ improvements }: ImprovementsViewProps) {
           })}
         </div>
       </div>
+
+      {/* Exporter Modal */}
+      {selectedVersion && (
+        <VersionExporterModal
+          isOpen={true}
+          onClose={() => setSelectedVersion(null)}
+          title={selectedVersion.title}
+          content={selectedVersion.content}
+          description={selectedVersion.description}
+        />
+      )}
     </div>
   )
 }

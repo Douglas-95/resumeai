@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { container } from 'tsyringe'
 import { GetAnalysisUseCase } from '../../../application/use-cases/GetAnalysis/GetAnalysisUseCase.js'
+import { MatchJobUseCase } from '../../../application/use-cases/MatchJob/MatchJobUseCase.js'
 
 export async function analysisRoutes(app: FastifyInstance) {
   /**
@@ -82,14 +83,42 @@ export async function analysisRoutes(app: FastifyInstance) {
     },
   )
 
-  /**
-   * POST /api/v1/analyses/:id/job-match
-   * Match a resume against a job description.
-   */
-  app.post('/:id/job-match', async (request, reply) => {
-    return reply.status(501).send({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: 'Coming in Phase 5', details: null },
-    })
-  })
+  app.post(
+    '/:id/job-match',
+    {
+      schema: {
+        description: 'Match a resume against a job description',
+        tags: ['analyses'],
+        params: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+          required: ['id'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            jobDescription: { type: 'string' },
+          },
+          required: ['jobDescription'],
+        },
+      },
+    },
+    async (request, reply) => {
+      // await request.jwtVerify()
+      const userId = 'temp-user-id'
+      const { id } = request.params as { id: string }
+      const { jobDescription } = request.body as { jobDescription: string }
+
+      const useCase = container.resolve(MatchJobUseCase)
+      const result = await useCase.execute({
+        analysisId: id,
+        userId,
+        jobDescription,
+      })
+
+      return reply.send({ success: true, data: result })
+    }
+  )
 }
