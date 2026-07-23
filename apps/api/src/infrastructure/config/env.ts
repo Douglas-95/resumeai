@@ -37,7 +37,7 @@ const envSchema = z.object({
 
   // Gemini
   GEMINI_API_KEY: z.string().optional(),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
 
   // BullMQ Worker
   WORKER_CONCURRENCY: z.coerce.number().default(5),

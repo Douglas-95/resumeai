@@ -51,64 +51,70 @@ export class AnalyzeResumeUseCase {
       await this.resumeRepository.update(resume)
     }
 
-    // ── Step 2: Scores ────────────────────────────────────────────────────────
-    try {
-      const scores = await this.ai.generateScores(rawText, parsedData)
-      analysis.scores = scores
-    } catch (err) {
-      logger.warn({ err, section: 'scores' }, 'AI scoring failed — continuing without scores')
-      analysis.recordSectionError('scores', this.toErrorMessage(err))
+    // ── Parallel execution of Steps 2 to 7 ────────────────────────────────────
+    const step2 = async () => {
+      try {
+        analysis.scores = await this.ai.generateScores(rawText, parsedData)
+      } catch (err) {
+        logger.warn({ err, section: 'scores' }, 'AI scoring failed — continuing without scores')
+        analysis.recordSectionError('scores', this.toErrorMessage(err))
+      }
     }
-    await this.analysisRepository.update(analysis)
 
-    // ── Step 3: Insights ──────────────────────────────────────────────────────
-    try {
-      const insights = await this.ai.generateInsights(rawText, parsedData)
-      analysis.insights = insights
-    } catch (err) {
-      logger.warn({ err, section: 'insights' }, 'AI insights failed — continuing')
-      analysis.recordSectionError('insights', this.toErrorMessage(err))
+    const step3 = async () => {
+      try {
+        analysis.insights = await this.ai.generateInsights(rawText, parsedData)
+      } catch (err) {
+        logger.warn({ err, section: 'insights' }, 'AI insights failed — continuing')
+        analysis.recordSectionError('insights', this.toErrorMessage(err))
+      }
     }
-    await this.analysisRepository.update(analysis)
 
-    // ── Step 4: ATS Analysis ──────────────────────────────────────────────────
-    try {
-      const atsAnalysis = await this.ai.analyzeATS(rawText)
-      analysis.atsAnalysis = atsAnalysis
-    } catch (err) {
-      logger.warn({ err, section: 'ats' }, 'ATS analysis failed — continuing')
-      analysis.recordSectionError('ats', this.toErrorMessage(err))
+    const step4 = async () => {
+      try {
+        analysis.atsAnalysis = await this.ai.analyzeATS(rawText)
+      } catch (err) {
+        logger.warn({ err, section: 'ats' }, 'ATS analysis failed — continuing')
+        analysis.recordSectionError('ats', this.toErrorMessage(err))
+      }
     }
-    await this.analysisRepository.update(analysis)
 
-    // ── Step 5: STAR Rewrites ─────────────────────────────────────────────────
-    try {
-      const starRewrites = await this.ai.generateSTARRewrites(rawText, parsedData)
-      analysis.starRewrites = starRewrites
-    } catch (err) {
-      logger.warn({ err, section: 'star' }, 'STAR rewrite failed — continuing')
-      analysis.recordSectionError('star', this.toErrorMessage(err))
+    const step5 = async () => {
+      try {
+        analysis.starRewrites = await this.ai.generateSTARRewrites(rawText, parsedData)
+      } catch (err) {
+        logger.warn({ err, section: 'star' }, 'STAR rewrite failed — continuing')
+        analysis.recordSectionError('star', this.toErrorMessage(err))
+      }
     }
-    await this.analysisRepository.update(analysis)
 
-    // ── Step 6: XYZ Rewrites ──────────────────────────────────────────────────
-    try {
-      const xyzRewrites = await this.ai.generateXYZRewrites(rawText, parsedData)
-      analysis.xyzRewrites = xyzRewrites
-    } catch (err) {
-      logger.warn({ err, section: 'xyz' }, 'XYZ rewrite failed — continuing')
-      analysis.recordSectionError('xyz', this.toErrorMessage(err))
+    const step6 = async () => {
+      try {
+        analysis.xyzRewrites = await this.ai.generateXYZRewrites(rawText, parsedData)
+      } catch (err) {
+        logger.warn({ err, section: 'xyz' }, 'XYZ rewrite failed — continuing')
+        analysis.recordSectionError('xyz', this.toErrorMessage(err))
+      }
     }
-    await this.analysisRepository.update(analysis)
 
-    // ── Step 7: Improvements ──────────────────────────────────────────────────
-    try {
-      const improvements = await this.ai.generateImprovements(rawText, parsedData)
-      analysis.improvements = improvements
-    } catch (err) {
-      logger.warn({ err, section: 'improvements' }, 'Improvements generation failed — continuing')
-      analysis.recordSectionError('improvements', this.toErrorMessage(err))
+    const step7 = async () => {
+      try {
+        analysis.improvements = await this.ai.generateImprovements(rawText, parsedData)
+      } catch (err) {
+        logger.warn({ err, section: 'improvements' }, 'Improvements generation failed — continuing')
+        analysis.recordSectionError('improvements', this.toErrorMessage(err))
+      }
     }
+
+    // Execute steps concurrently using Promise.all to optimize performance
+    await Promise.all([
+      step2(),
+      step3(),
+      step4(),
+      step5(),
+      step6(),
+      step7(),
+    ])
 
     // ── Finalize ──────────────────────────────────────────────────────────────
     analysis.computeFinalStatus()
