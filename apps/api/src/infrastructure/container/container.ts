@@ -13,6 +13,7 @@ import { SupabaseStorageAdapter } from '../storage/SupabaseStorageAdapter.js'
 import { BullMQAdapter } from '../queue/BullMQAdapter.js'
 import { ClaudeAIAdapter } from '../ai/adapters/ClaudeAIAdapter.js'
 import { OpenAIAdapter } from '../ai/adapters/OpenAIAdapter.js'
+import { GeminiAIAdapter } from '../ai/adapters/GeminiAIAdapter.js'
 import { AIGateway } from '../ai/AIGateway.js'
 
 export function setupContainer(): void {
@@ -38,6 +39,8 @@ export function setupContainer(): void {
   // AI Provider Injection based strictly on env.AI_PROVIDER
   if (env.AI_PROVIDER === 'openai') {
     container.registerSingleton('ConcreteAIAdapter', OpenAIAdapter)
+  } else if (env.AI_PROVIDER === 'gemini') {
+    container.registerSingleton('ConcreteAIAdapter', GeminiAIAdapter)
   } else {
     container.registerSingleton('ConcreteAIAdapter', ClaudeAIAdapter)
   }

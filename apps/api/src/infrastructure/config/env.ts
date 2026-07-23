@@ -23,7 +23,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
 
   // AI Provider — controls which adapter is instantiated at runtime
-  AI_PROVIDER: z.enum(['claude', 'openai']).default('claude'),
+  AI_PROVIDER: z.enum(['claude', 'openai', 'gemini']).default('claude'),
 
   // Anthropic
   ANTHROPIC_API_KEY: z.string().optional(),
@@ -34,6 +34,10 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
   OPENAI_MAX_TOKENS: z.coerce.number().default(8192),
+
+  // Gemini
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-1.5-flash'),
 
   // BullMQ Worker
   WORKER_CONCURRENCY: z.coerce.number().default(5),
